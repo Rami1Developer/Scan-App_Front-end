@@ -7,6 +7,8 @@ import 'package:scan_app/views/terms.dart';
 import 'package:scan_app/services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
+
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
 }
@@ -439,7 +441,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               'email': emailController.text,
                               'password': passwordController.text,
                               'name': userNameController.text,
-                              'role': isRadioligist? "radiologist":"patient"
                             };
                             AuthService a = new AuthService();
                             // Call the signUp function

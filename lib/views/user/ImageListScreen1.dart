@@ -212,8 +212,10 @@ class ImageDetailsScreen extends StatelessWidget {
       body: jsonEncode({'id': imageId}),
     );
 
-    if (response.contentLength!> 0) {
 
+    if (response.contentLength!> 0) {
+      print("_______________");
+      print(response.body);
       return json.decode(response.body);
     } else {
       throw Exception('Failed to load image details');
@@ -235,7 +237,8 @@ class ImageDetailsScreen extends StatelessWidget {
             final data = snapshot.data!;
             final title = data['title'] ?? 'No Title';
             final imageUrl = '${Constants.baseUrl}upload/${data["image_name"]}';
-
+            print(data);
+            //print(imageUrl);
             return SingleChildScrollView(
               padding: EdgeInsets.all(16.0),
               child: Column(
