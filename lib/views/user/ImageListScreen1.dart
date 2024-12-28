@@ -1,9 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart';
+import 'package:scan_app/services/user_service.dart';
 import 'package:scan_app/utils/constants.dart';
+import 'package:scan_app/utils/permissions_helper.dart';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+
 class ImageListScreen1 extends StatefulWidget {
   const ImageListScreen1({Key? key}) : super(key: key);
 
@@ -15,6 +21,7 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
   List<dynamic> _images = [];
   bool _isLoading = true;
   String userId = "";
+  final UserService userService = UserService();
 
   @override
   void initState() {
@@ -48,7 +55,6 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
     }
   }
 
-
   Future<String> _fetchUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('userId') ?? '';
@@ -56,7 +62,7 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
 
   Future<void> _fetchImages() async {
     try {
-      print("we are here 00000000000000000000000000000000000000000000000000000000000000");
+      //print("we are here 00000000000000000000000000000000000000000000000000000000000000");
       final url = Uri.parse('${Constants.baseUrl}files/getAllImages');
       final response = await http.post(
         url,
@@ -64,7 +70,7 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
         body: jsonEncode({'id': userId}), // Pass the actual user ID
       );
 
-      if (response.contentLength !>0) {
+      if (response.contentLength! > 0) {
         setState(() {
           _images = json.decode(response.body);
           print(_images);
@@ -77,22 +83,6 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to fetch images.')),
         );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
       }
     } catch (e) {
       setState(() {
@@ -104,68 +94,128 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
     }
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: Text('Image List'),
-    ),
-    body: _isLoading
-        ? Center(child: CircularProgressIndicator())
-        : Column(
-            children: [
-              Container(
-                width: double.infinity,
-                height: 60,
-                decoration: BoxDecoration(color: Colors.blue),
-                child: Center(
-                  child: Text(
-                    'Manage your documents easily',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
+
+  Future<String?> downloadPDF(String userId) async {
+    // Request permission before accessing storage
+
+    try {
+      final hasPermission = await requestStoragePermission();
+      if (!hasPermission) {
+        print('Permission denied. Cannot download file.');
+        return null;
+      }
+      final response = await userService.generatePDFFromOCRData(userId);
+
+      if (response.statusCode == 200) {
+        final customDirectoryPath =
+            '/storage/emulated/0/Download/ScanApp'; // Android Download folder
+        final downloadDirectory = Directory('$customDirectoryPath'); // Custom folder within Downloads
+
+        // Ensure the directory exists
+        //final directory = Directory(customDirectoryPath);
+        print("____________________________1");
+
+        if (!(await downloadDirectory.exists())) {
+          print("____________________________1.5");
+
+          await downloadDirectory.create(recursive: true);//the error is here after print trace
+        }
+        print("____________________________2");
+
+        // final filePath = '$customDirectoryPath/generated_pdf_$userId.pdf';
+        final filePath = '${downloadDirectory.path}/generated_pdf_$userId.pdf';
+
+        // Save the PDF to the custom path
+        final file = File(filePath);
+        print("____________________________1");
+
+        await file.writeAsBytes(response.bodyBytes);
+        print("____________________________12");
+
+        print('PDF saved at $filePath');
+        print('File downloaded to: $filePath');
+        return filePath;
+      } else {
+        print('Failed to download PDF: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error downloading PDF: $e');
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Image List'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.picture_as_pdf),
+            onPressed: () {
+              downloadPDF(
+                  userId); // Call your download function when the button is pressed
+            },
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 60,
+                  decoration: BoxDecoration(color: Colors.blue),
+                  child: Center(
+                    child: Text(
+                      'Manage your documents easily',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(height: 16),
-              Expanded(
-                child: _images.isEmpty
-                    ? Center( // Show the error image when no images are available
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              'assets/imagelistnotfound-removebg-preview.png',
-                              height: 200,
-                              width: 200,
-                              fit: BoxFit.cover,
-                            ),
-                            SizedBox(height: 16.0),
-                            Text(
-                              'No images available',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
+                SizedBox(height: 16),
+                Expanded(
+                  child: _images.isEmpty
+                      ? Center(
+                          // Show the error image when no images are available
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                'assets/imagelistnotfound-removebg-preview.png',
+                                height: 200,
+                                width: 200,
+                                fit: BoxFit.cover,
                               ),
-                            ),
-                          ],
+                              SizedBox(height: 16.0),
+                              Text(
+                                'No images available',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _images.length,
+                          itemBuilder: (context, index) {
+                            final image = _images[index];
+                            return _buildImageItem(image);
+                          },
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: _images.length,
-                        itemBuilder: (context, index) {
-                          final image = _images[index];
-                          return _buildImageItem(image);
-                        },
-                      ),
-              ),
-            ],
-          ),
-  );
-}
-
+                ),
+              ],
+            ),
+    );
+  }
 
   Widget _buildImageItem(dynamic image) {
     return Card(
@@ -212,10 +262,7 @@ class ImageDetailsScreen extends StatelessWidget {
       body: jsonEncode({'id': imageId}),
     );
 
-
-    if (response.contentLength!> 0) {
-      print("_______________");
-      print(response.body);
+    if (response.contentLength! > 0) {
       return json.decode(response.body);
     } else {
       throw Exception('Failed to load image details');

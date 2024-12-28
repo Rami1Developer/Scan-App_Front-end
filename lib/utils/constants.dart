@@ -1,6 +1,6 @@
 /// API Endpoints
 class Constants {
-  static const String baseUrl = 'http://192.168.1.142:3000/';
+  static const String baseUrl = 'http://192.168.1.16:3000/';
 
 
   static const String signup = 'auth/signup';
@@ -24,6 +24,9 @@ class Constants {
   static const String addClinic = 'cliniques/create';  // This should be correct
   static const String deleteClinic = 'cliniques';
   static const String updateClinic = 'cliniques';
+  static const String pdf = 'files/generate-pdf';
+
+
 
 }
 

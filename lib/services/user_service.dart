@@ -38,7 +38,14 @@ class UserService {
     }
   }
 
- 
+ Future<http.Response> generatePDFFromOCRData(String userId) async {
+    final url = Uri.parse('$baseUrl${Constants.pdf}/$userId');
+    final response = await http.get(
+      url,
+    );
+    return response;
+  }
+
 
 
 }
