@@ -1,13 +1,10 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:scan_app/services/user_service.dart';
 import 'package:scan_app/utils/constants.dart';
 import 'package:scan_app/utils/permissions_helper.dart';
 import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ImageListScreen1 extends StatefulWidget {
@@ -19,6 +16,7 @@ class ImageListScreen1 extends StatefulWidget {
 
 class _ImageListScreen1State extends State<ImageListScreen1> {
   List<dynamic> _images = [];
+  List<String> _selectedImageIds = []; // IDs des images sélectionnées
   bool _isLoading = true;
   String userId = "";
   final UserService userService = UserService();
@@ -62,18 +60,16 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
 
   Future<void> _fetchImages() async {
     try {
-      //print("we are here 00000000000000000000000000000000000000000000000000000000000000");
       final url = Uri.parse('${Constants.baseUrl}files/getAllImages');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'id': userId}), // Pass the actual user ID
+        body: jsonEncode({'id': userId}),
       );
 
       if (response.contentLength! > 0) {
         setState(() {
           _images = json.decode(response.body);
-          print(_images);
           _isLoading = false;
         });
       } else {
@@ -94,7 +90,48 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
     }
   }
 
+  void _toggleSelection(String imageId) {
+    setState(() {
+      if (_selectedImageIds.contains(imageId)) {
+        _selectedImageIds.remove(imageId);
+      } else {
+        _selectedImageIds.add(imageId);
+      }
+    });
+  }
 
+  Future<void> _deleteSelectedImages() async {
+    if (_selectedImageIds.isEmpty) return;
+
+    try {
+      final url = Uri.parse('${Constants.baseUrl}files/deleteImages');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': _selectedImageIds}),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _images.removeWhere((image) => _selectedImageIds.contains(image['userId']));
+          _selectedImageIds.clear();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Selected images deleted successfully.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete selected images.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  
   Future<String?> downloadPDF(String userId) async {
     // Request permission before accessing storage
 
@@ -152,6 +189,12 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
         title: Text('Image List'),
         actions: [
           IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: _selectedImageIds.isEmpty
+                ? null
+                : _deleteSelectedImages, // Bouton pour supprimer les images sélectionnées
+          ),
+          IconButton(
             icon: Icon(Icons.picture_as_pdf),
             onPressed: () {
               downloadPDF(
@@ -183,7 +226,6 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
                 Expanded(
                   child: _images.isEmpty
                       ? Center(
-                          // Show the error image when no images are available
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -218,6 +260,8 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
   }
 
   Widget _buildImageItem(dynamic image) {
+    final isSelected = _selectedImageIds.contains(image['_id']);
+
     return Card(
       margin: EdgeInsets.only(bottom: 12.0),
       elevation: 5,
@@ -235,131 +279,14 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
           image['title'] ?? 'No Title',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        trailing: Icon(Icons.chevron_right, color: Colors.blue),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ImageDetailsScreen(imageId: image['_id']),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class ImageDetailsScreen extends StatelessWidget {
-  final String imageId;
-
-  const ImageDetailsScreen({Key? key, required this.imageId}) : super(key: key);
-
-  Future<Map<String, dynamic>> _fetchImageDetails() async {
-    final url = Uri.parse('${Constants.baseUrl}files/getImageDetails');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'id': imageId}),
-    );
-
-    if (response.contentLength! > 0) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to load image details');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Image Details')),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _fetchImageDetails(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (snapshot.hasData) {
-            final data = snapshot.data!;
-            final title = data['title'] ?? 'No Title';
-            final imageUrl = '${Constants.baseUrl}upload/${data["image_name"]}';
-            print(data);
-            //print(imageUrl);
-            return SingleChildScrollView(
-              padding: EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (imageUrl.isNotEmpty)
-                    Image.network(imageUrl, height: 200, fit: BoxFit.cover),
-                  SizedBox(height: 16),
-                  Text(
-                    title,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 16),
-                  ..._buildDynamicFields(data),
-                ],
-              ),
-            );
-          } else {
-            return Center(child: Text('No data available'));
-          }
-        },
-      ),
-    );
-  }
-
-  List<Widget> _buildDynamicFields(Map<String, dynamic> data) {
-    List<Widget> widgets = [];
-
-    data.forEach((key, value) {
-      if (['title', 'userId', 'image_name', '_id', '__v'].contains(key)) return;
-
-      widgets.add(
-        Card(
-          margin: EdgeInsets.only(bottom: 12.0),
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: ListTile(
-            leading: Icon(Icons.info, color: Colors.blue),
-            title: Text(
-              key,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            subtitle: _buildFieldValue(value),
-            trailing: Icon(Icons.wysiwyg, color: Colors.blue),
-          ),
+        trailing: Checkbox(
+          value: isSelected,
+          onChanged: (value) => _toggleSelection(image['_id']),
         ),
-      );
-    });
-
-    return widgets;
-  }
-
-  Widget _buildFieldValue(dynamic value) {
-    if (value is String || value is int || value is double) {
-      return Text(
-        value.toString(),
-        style: TextStyle(fontSize: 14),
-      );
-    } else if (value is List) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: value.map((item) => Text('• $item')).toList(),
-      );
-    } else if (value is Map) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: value.entries.map((entry) {
-          return Text('${entry.key}: ${entry.value}');
-        }).toList(),
-      );
-    } else {
-      return Text('Unsupported data type');
-    }
+        onTap: () {
+          _toggleSelection(image['_id']);
+        },
+      ),
+    );
   }
 }

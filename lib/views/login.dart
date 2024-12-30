@@ -85,7 +85,7 @@ class LoginScreenState extends State<LoginScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text('Banned Account'),
-          content: Text('You can\'t access as a radiologist your mail must be confirmed by the admin '),
+          content: Text('Access denied , your mail must be confirmed  '),
           actions: [
             TextButton(
               onPressed: () {

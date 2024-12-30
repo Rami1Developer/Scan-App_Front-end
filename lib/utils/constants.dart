@@ -1,6 +1,6 @@
 /// API Endpoints
 class Constants {
-  static const String baseUrl = 'http://192.168.1.16:3000/';
+  static const String baseUrl = 'http://192.168.1.21:3000/';
 
 
   static const String signup = 'auth/signup';
