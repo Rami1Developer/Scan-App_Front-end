@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:scan_app/services/user_service.dart';
 import 'package:scan_app/utils/constants.dart';
 import 'package:scan_app/utils/permissions_helper.dart';
+import 'package:scan_app/views/user/ImageDetailsScreen.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,6 +21,7 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
   bool _isLoading = true;
   String userId = "";
   final UserService userService = UserService();
+  bool _isSelectionMode = false; // Track selection mode
 
   @override
   void initState() {
@@ -90,48 +92,39 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
     }
   }
 
-  void _toggleSelection(String imageId) {
-    setState(() {
-      if (_selectedImageIds.contains(imageId)) {
-        _selectedImageIds.remove(imageId);
-      } else {
-        _selectedImageIds.add(imageId);
-      }
-    });
-  }
 
-  Future<void> _deleteSelectedImages() async {
-    if (_selectedImageIds.isEmpty) return;
 
-    try {
-      final url = Uri.parse('${Constants.baseUrl}files/deleteImages');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': _selectedImageIds}),
-      );
+  // Future<void> _deleteSelectedImages() async {
+  //   if (_selectedImageIds.isEmpty) return;
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _images.removeWhere((image) => _selectedImageIds.contains(image['userId']));
-          _selectedImageIds.clear();
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Selected images deleted successfully.')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete selected images.')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  }
+  //   try {
+  //     final url = Uri.parse('${Constants.baseUrl}files/deleteImages');
+  //     final response = await http.post(
+  //       url,
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: jsonEncode({'userId': _selectedImageIds}),
+  //     );
 
-  
+  //     if (response.statusCode == 201 ) {
+  //       setState(() {
+  //         _images.removeWhere((image) => _selectedImageIds.contains(image['_id']));
+  //         _selectedImageIds.clear();
+  //       });
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Selected images deleted successfully.')),
+  //       );
+  //     } else {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Failed to delete selected images.')),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Error: $e')),
+  //     );
+  //   }
+  // }
+
   Future<String?> downloadPDF(String userId) async {
     // Request permission before accessing storage
 
@@ -146,7 +139,8 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
       if (response.statusCode == 200) {
         final customDirectoryPath =
             '/storage/emulated/0/Download/ScanApp'; // Android Download folder
-        final downloadDirectory = Directory('$customDirectoryPath'); // Custom folder within Downloads
+        final downloadDirectory =
+            Directory('$customDirectoryPath'); // Custom folder within Downloads
 
         // Ensure the directory exists
         //final directory = Directory(customDirectoryPath);
@@ -155,7 +149,8 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
         if (!(await downloadDirectory.exists())) {
           print("____________________________1.5");
 
-          await downloadDirectory.create(recursive: true);//the error is here after print trace
+          await downloadDirectory.create(
+              recursive: true); //the error is here after print trace
         }
         print("____________________________2");
 
@@ -182,12 +177,68 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
     }
   }
 
+  Future<void> _deleteSelectedImages() async {
+    if (_selectedImageIds.isEmpty) return;
+
+    try {
+      final url = Uri.parse('${Constants.baseUrl}files/deleteImages');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': _selectedImageIds}),
+      );
+
+      if (response.statusCode == 201) {
+        setState(() {
+          _images
+              .removeWhere((image) => _selectedImageIds.contains(image['_id']));
+          _selectedImageIds.clear();
+          _isSelectionMode = false; // Exit selection mode after deletion
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Selected images deleted successfully.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete selected images.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+ void _toggleSelection(String imageId) {
+    setState(() {
+      if (_selectedImageIds.contains(imageId)) {
+        _selectedImageIds.remove(imageId);
+      } else {
+        _selectedImageIds.add(imageId);
+      }
+    });
+  }
+   void _enterSelectionMode(String imageId) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedImageIds.add(imageId); // Select the long-pressed image
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedImageIds.clear();
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Image List'),
-        actions: [
+        actions:_isSelectionMode
+            ?  [
+
           IconButton(
             icon: Icon(Icons.delete),
             onPressed: _selectedImageIds.isEmpty
@@ -201,7 +252,13 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
                   userId); // Call your download function when the button is pressed
             },
           ),
-        ],
+        ]:[IconButton(
+            icon: Icon(Icons.picture_as_pdf),
+            onPressed: () {
+              downloadPDF(
+                  userId); // Call your download function when the button is pressed
+            },
+          ),],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -279,12 +336,27 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
           image['title'] ?? 'No Title',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        trailing: Checkbox(
+        trailing: _isSelectionMode
+            ?Checkbox(
           value: isSelected,
           onChanged: (value) => _toggleSelection(image['_id']),
-        ),
+        ): null,
         onTap: () {
-          _toggleSelection(image['_id']);
+          if (_isSelectionMode) {
+            _toggleSelection(image['_id']);
+          } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ImageDetailsScreen(imageId: image['_id']),
+            ),
+          );}
+        },
+        onLongPress: () {
+         if (!_isSelectionMode) {
+            _enterSelectionMode(image['_id']);
+          }
+         // _toggleSelection(image['_id']);
         },
       ),
     );
