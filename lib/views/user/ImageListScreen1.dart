@@ -233,7 +233,15 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+    onWillPop: () async {
+      if (_isSelectionMode) {
+        _exitSelectionMode();
+        return false; // Prevent default back action
+      }
+      return true; // Allow default back action
+    },
+    child : Scaffold(
       appBar: AppBar(
         title: Text('Image List'),
         actions:_isSelectionMode
@@ -313,7 +321,8 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
                 ),
               ],
             ),
-    );
+    ),
+    );  
   }
 
   Widget _buildImageItem(dynamic image) {
