@@ -187,9 +187,9 @@ class _ProfileViewState extends State<ProfileView> {
                       icon: Icons.lock,
                       title: 'Change Password',
                       trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        _showEditPasswordDialog(context);
-                      },
+                      // onTap: () {
+                      //   _showEditPasswordDialog(context);
+                      // },
                     ),
                     const SizedBox(height: 8),
                     _buildOptionCard(

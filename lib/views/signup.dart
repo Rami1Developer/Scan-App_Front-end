@@ -21,7 +21,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool isPasswordValid = true;
   bool isConfirmPasswordValid = true;
   bool isUsernameValid = true;
-  bool isRadioligist = false;
+  // bool isRadioligist = false;
   final TextEditingController userNameController = TextEditingController();
 
   final TextEditingController emailController = TextEditingController();
@@ -293,10 +293,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           },
                         ),
                       ),
-                      onTap: () {
-                        // Show password suggestion dialog when the field is tapped
-                        _showPasswordSuggestionDialog(context);
-                      },
+                      // onTap: () {
+                      //   // Show password suggestion dialog when the field is tapped
+                      //   _showPasswordSuggestionDialog(context);
+                      // },
                     ),
                     if (!isPasswordValid)
                       Text(
@@ -354,35 +354,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
 
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Are you radiologist?",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF113155),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Switch(
-                          value:
-                              isRadioligist, // This boolean value should be defined in your state
-                          onChanged: (bool newValue) {
-                            setState(() {
-                              isRadioligist =
-                                  newValue; // Update the state with the new value
-                            });
-                          },
-                          activeColor:
-                              const Color(0xFF90CAF9), // Customize active color
-                          inactiveThumbColor:
-                              Colors.grey, // Customize inactive thumb color
-                          inactiveTrackColor: Colors
-                              .grey[300], // Customize inactive track color
-                        ),
-                      ],
-                    ),
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //   children: [
+                    //     const Text(
+                    //       "Are you radiologist?",
+                    //       style: TextStyle(
+                    //         fontSize: 16,
+                    //         color: Color(0xFF113155),
+                    //         fontWeight: FontWeight.bold,
+                    //       ),
+                    //     ),
+                    //     Switch(
+                    //       value:
+                    //           isRadioligist, // This boolean value should be defined in your state
+                    //       onChanged: (bool newValue) {
+                    //         setState(() {
+                    //           isRadioligist =
+                    //               newValue; // Update the state with the new value
+                    //         });
+                    //       },
+                    //       activeColor:
+                    //           const Color(0xFF90CAF9), // Customize active color
+                    //       inactiveThumbColor:
+                    //           Colors.grey, // Customize inactive thumb color
+                    //       inactiveTrackColor: Colors
+                    //           .grey[300], // Customize inactive track color
+                    //     ),
+                    //   ],
+                    // ),
 
 
 

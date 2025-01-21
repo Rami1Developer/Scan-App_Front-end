@@ -10,6 +10,6 @@ Future<bool> requestStoragePermission() async {
     return true; // Permission granted
   } else {
     print('Storage permission denied');
-    return true; // Permission denied
+    return false; // Permission denied
   }
 }

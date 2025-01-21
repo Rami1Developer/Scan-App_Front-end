@@ -13,7 +13,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   final List<Widget> _pages = [
-    const ImageListScreen1(),
+    const ImageListScreen1(), 
     UploadAndAnalyzeScreen(), // Passe directement updateIndex
     const ProfileView(),
   ];

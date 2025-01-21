@@ -208,10 +208,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       },
                     ),
                   ),
-                  onTap: () {
-                    // Show password suggestion dialog when the field is tapped
-                    _showPasswordSuggestionDialog(context);
-                  },
+                  // onTap: () {
+                  //   // Show password suggestion dialog when the field is tapped
+                  //   _showPasswordSuggestionDialog(context);
+                  // },
                 ),
                 if (!isPasswordValid)
                   Text(

@@ -7,6 +7,7 @@ import 'package:scan_app/utils/permissions_helper.dart';
 import 'package:scan_app/views/user/ImageDetailsScreen.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart'; // Ajoutez cette ligne pour formater la date
 
 class ImageListScreen1 extends StatefulWidget {
   const ImageListScreen1({Key? key}) : super(key: key);
@@ -92,8 +93,6 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
     }
   }
 
-
-
   // Future<void> _deleteSelectedImages() async {
   //   if (_selectedImageIds.isEmpty) return;
 
@@ -155,8 +154,11 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
         print("____________________________2");
 
         // final filePath = '$customDirectoryPath/generated_pdf_$userId.pdf';
-        final filePath = '${downloadDirectory.path}/generated_pdf_$userId.pdf';
-
+        final now = DateTime.now(); // Obtenez l'heure actuelle
+        final formattedDate = DateFormat('yyyyMMdd_HHmmss')
+            .format(now); // Formatez la date (ex. 20250102_153045)
+        final filePath =
+            '${downloadDirectory.path}/generated_pdf_$formattedDate.pdf'; // Utilisez la date formatée
         // Save the PDF to the custom path
         final file = File(filePath);
         print("____________________________1");
@@ -200,7 +202,9 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete selected images.')),
+          SnackBar(
+              content: Text(
+                  '${response.statusCode} : Failed to delete selected images.')),
         );
       }
     } catch (e) {
@@ -209,7 +213,8 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
       );
     }
   }
- void _toggleSelection(String imageId) {
+
+  void _toggleSelection(String imageId) {
     setState(() {
       if (_selectedImageIds.contains(imageId)) {
         _selectedImageIds.remove(imageId);
@@ -218,7 +223,8 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
       }
     });
   }
-   void _enterSelectionMode(String imageId) {
+
+  void _enterSelectionMode(String imageId) {
     setState(() {
       _isSelectionMode = true;
       _selectedImageIds.add(imageId); // Select the long-pressed image
@@ -231,98 +237,101 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
       _selectedImageIds.clear();
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-    onWillPop: () async {
-      if (_isSelectionMode) {
-        _exitSelectionMode();
-        return false; // Prevent default back action
-      }
-      return true; // Allow default back action
-    },
-    child : Scaffold(
-      appBar: AppBar(
-        title: Text('Image List'),
-        actions:_isSelectionMode
-            ?  [
-
-          IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: _selectedImageIds.isEmpty
-                ? null
-                : _deleteSelectedImages, // Bouton pour supprimer les images sélectionnées
-          ),
-          IconButton(
-            icon: Icon(Icons.picture_as_pdf),
-            onPressed: () {
-              downloadPDF(
-                  userId); // Call your download function when the button is pressed
-            },
-          ),
-        ]:[IconButton(
-            icon: Icon(Icons.picture_as_pdf),
-            onPressed: () {
-              downloadPDF(
-                  userId); // Call your download function when the button is pressed
-            },
-          ),],
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: 60,
-                  decoration: BoxDecoration(color: Colors.blue),
-                  child: Center(
-                    child: Text(
-                      'Manage your documents easily',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
+      onWillPop: () async {
+        if (_isSelectionMode) {
+          _exitSelectionMode();
+          return false; // Prevent default back action
+        }
+        return true; // Allow default back action
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Image List'),
+          actions: _isSelectionMode
+              ? [
+                  IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: _selectedImageIds.isEmpty
+                        ? null
+                        : _deleteSelectedImages, // Bouton pour supprimer les images sélectionnées
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.picture_as_pdf),
+                    onPressed: () {
+                      downloadPDF(
+                          userId); // Call your download function when the button is pressed
+                    },
+                  ),
+                ]
+              : [
+                  IconButton(
+                    icon: Icon(Icons.picture_as_pdf),
+                    onPressed: () {
+                      downloadPDF(
+                          userId); // Call your download function when the button is pressed
+                    },
+                  ),
+                ],
+        ),
+        body: _isLoading
+            ? Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 60,
+                    decoration: BoxDecoration(color: Colors.blue),
+                    child: Center(
+                      child: Text(
+                        'Manage your documents easily',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(height: 16),
-                Expanded(
-                  child: _images.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/imagelistnotfound-removebg-preview.png',
-                                height: 200,
-                                width: 200,
-                                fit: BoxFit.cover,
-                              ),
-                              SizedBox(height: 16.0),
-                              Text(
-                                'No images available',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
+                  SizedBox(height: 16),
+                  Expanded(
+                    child: _images.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/imagelistnotfound-removebg-preview.png',
+                                  height: 200,
+                                  width: 200,
+                                  fit: BoxFit.cover,
                                 ),
-                              ),
-                            ],
+                                SizedBox(height: 16.0),
+                                Text(
+                                  'No images available',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: _images.length,
+                            itemBuilder: (context, index) {
+                              final image = _images[index];
+                              return _buildImageItem(image);
+                            },
                           ),
-                        )
-                      : ListView.builder(
-                          itemCount: _images.length,
-                          itemBuilder: (context, index) {
-                            final image = _images[index];
-                            return _buildImageItem(image);
-                          },
-                        ),
-                ),
-              ],
-            ),
-    ),
-    );  
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 
   Widget _buildImageItem(dynamic image) {
@@ -346,26 +355,28 @@ class _ImageListScreen1State extends State<ImageListScreen1> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         trailing: _isSelectionMode
-            ?Checkbox(
-          value: isSelected,
-          onChanged: (value) => _toggleSelection(image['_id']),
-        ): null,
+            ? Checkbox(
+                value: isSelected,
+                onChanged: (value) => _toggleSelection(image['_id']),
+              )
+            : null,
         onTap: () {
           if (_isSelectionMode) {
             _toggleSelection(image['_id']);
           } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ImageDetailsScreen(imageId: image['_id']),
-            ),
-          );}
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ImageDetailsScreen(imageId: image['_id']),
+              ),
+            );
+          }
         },
         onLongPress: () {
-         if (!_isSelectionMode) {
+          if (!_isSelectionMode) {
             _enterSelectionMode(image['_id']);
           }
-         // _toggleSelection(image['_id']);
+          // _toggleSelection(image['_id']);
         },
       ),
     );
